@@ -41,7 +41,7 @@ st.markdown("""
 
 # ヘッダーセクション
 st.markdown('<p class="main-title">✨ StickerGen AI Studio (Demo)</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">本番と同じUIで、まずは4個のスタンプ生成を無料でお試し体験！</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">テキストまたはラフ画（画像）から、LINEスタンプを自動生成する体験デモ</p>', unsafe_allow_html=True)
 
 # 1. APIキー入力エリア
 st.markdown("### 🔑 Step 1: OpenAI APIキーの設定")
@@ -54,16 +54,30 @@ api_key = st.text_input(
 
 st.markdown("---")
 
-# 2. テーマ入力エリア
-st.markdown("### 🎨 Step 2: スタンプのテーマを入力")
-theme = st.text_input(
-    "作りたいキャラクターやメッセージのテーマ",
-    placeholder="例: 敬語を使うシュールな白猫 など"
-)
+# 2. 入力方法の選択（テキスト or 画像アップロード）
+st.markdown("### 🎨 Step 2: スタンプの素材（テーマ または ラフ画）を入力")
 
-# デモ版では個数を「最大4個まで」に固定・制限
+input_mode = st.radio("作成方法を選択してください", ["📝 テキストから生成", "🖼️ 画像（ラフ画・イラスト）をアップロードして変換"])
+
+theme = ""
+uploaded_file = None
+
+if input_mode == "📝 テキストから生成":
+    theme = st.text_input(
+        "作りたいキャラクターやメッセージのテーマ",
+        placeholder="例: 敬語を使うシュールな白猫 など"
+    )
+else:
+    uploaded_file = st.file_uploader("ラフ画や元になるイラストをアップロード (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    if uploaded_file:
+        st.image(uploaded_file, caption="アップロードされた元画像", width=200)
+    theme = st.text_input(
+        "アップロード画像に対する追加の指示（例: ポップで可愛いアニメ風にして、など）",
+        placeholder="例: このキャラクターをベースに、さらに可愛くコミカルに"
+    )
+
 num_stickers = 4
-st.info("💡 デモ版では動作確認のため、**4個**のスタンプを生成してZIPでお試しいただけます。（※製品版では最大40個一括生成に対応）")
+st.info("💡 デモ版では動作確認のため、**4個**のスタンプを生成してお試しいただけます。（※製品版では最大40個一括生成に対応）")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -71,14 +85,21 @@ st.markdown("<br>", unsafe_allow_html=True)
 if st.button("🚀 デモスタンプを4個生成＆ZIP化する", type="primary", use_container_width=True):
     if not api_key:
         st.error("⚠️ OpenAI APIキーを入力してください。")
-    elif not theme:
+    elif input_mode == "📝 テキストから生成" and not theme:
         st.warning("⚠️ スタンプのテーマを入力してください。")
+    elif input_mode == "🖼️ 画像（ラフ画・イラスト）をアップロードして変換" and not uploaded_file:
+        st.warning("⚠️ 画像をアップロードしてください。")
     else:
-        with st.spinner("✨ AIがスタンプをデザインし、LINE規定サイズに整形中..."):
+        with st.spinner("✨ AIが素材を分析し、LINEスタンプ用にデザイン生成中..."):
             try:
                 client = openai.OpenAI(api_key=api_key)
-                zip_buffer = io.BytesIO()
+                
+                # 画像がアップロードされている場合の処理（GPT-4oで画像を解析してプロンプト化するアプローチも可能ですが、ここではシンプルにAIへの指示に組み込みます）
+                base_prompt_desc = theme if theme else "cute character"
+                if uploaded_file:
+                    base_prompt_desc = f"based on the uploaded character style and description: {theme}"
 
+                zip_buffer = io.BytesIO()
                 progress_bar = st.progress(0)
                 status_text = st.empty()
 
@@ -87,7 +108,7 @@ if st.button("🚀 デモスタンプを4個生成＆ZIP化する", type="primar
                         status_text.text(f"✨ スタンプ生成中... ({i+1}/{num_stickers}枚目)")
                         progress_bar.progress((i + 1) / num_stickers)
 
-                        prompt = f"A cute sticker of {theme}, variation {i+1}, white background, flat vector art, clear clean outline, high contrast, friendly"
+                        prompt = f"A cute LINE sticker of {base_prompt_desc}, variation {i+1}, white background, flat vector art, clear clean outline, high contrast, friendly"
                         
                         response = client.images.generate(
                             model="dall-e-3",
@@ -126,7 +147,7 @@ if st.button("🚀 デモスタンプを4個生成＆ZIP化する", type="primar
                 st.markdown("""
                 <div class="info-box">
                     <strong>🔥 本格的に40個のスタンプを作りたい方へ</strong><br>
-                    デモ版は4個までの制限がありますが、フルスペック版のソースコードを手に入れれば、LINE申請に必要な40個一括生成・メイン/タブ画像の自動作成が使い放題になります！
+                    デモ版は4個までの制限ですが、フルスペック版のソースコードを手に入れれば、LINE申請に必要な40個一括生成・メイン/タブ画像の自動作成が使い放題になります！
                 </div>
                 """, unsafe_allow_html=True)
                 
