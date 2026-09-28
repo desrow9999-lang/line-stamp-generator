@@ -93,16 +93,15 @@ if st.button("🚀 デモスタンプを生成する（1枚）", type="primary",
                         max_tokens=300
                     )
                     desc = vision_response.choices[0].message.content
-                    final_prompt = f"A cute sticker of {desc}, white background, flat vector art, clear clean outline, high contrast, transparent style"
+                    final_prompt = f"A cute sticker of {desc}, white background, flat vector art, clear clean outline, high contrast"
                 else:
-                    final_prompt = f"A cute sticker of {theme}, white background, flat vector art, clear clean outline, high contrast, transparent style, friendly"
+                    final_prompt = f"A cute sticker of {theme}, white background, flat vector art, clear clean outline, high contrast, friendly"
 
-                # DALL-E 3で画像生成
+                # DALL-E 2で画像生成（※dall-e-3が使えない環境への互換性対応）
                 response = client.images.generate(
-                    model="dall-e-3",
+                    model="dall-e-2",
                     prompt=final_prompt,
-                    size="1024x1024",
-                    quality="standard",
+                    size="512x512",
                     n=1
                 )
 
@@ -122,7 +121,7 @@ if st.button("🚀 デモスタンプを生成する（1枚）", type="primary",
                 with col2:
                     st.markdown("#### 💡 自動化されたポイント")
                     st.write("✅ テキスト/画像からのマルチモーダル解析")
-                    st.write("✅ DALL-E 3による高品質スタンプ化")
+                    st.write("✅ AIによる高品質スタンプ化")
                     st.write("✅ LINE専用サイズ（370x320）へ自動リサイズ")
                     st.markdown("*※製品版では40個一括・背景透過・ZIP出力に対応*")
 
