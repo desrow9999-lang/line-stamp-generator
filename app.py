@@ -1,3 +1,4 @@
+import base64
 import io
 from PIL import Image
 import openai
@@ -28,38 +29,35 @@ st.markdown("""
         color: #666666;
         margin-bottom: 2rem;
     }
-    .card {
-        padding: 1.5rem;
-        border-radius: 12px;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        margin-bottom: 1.5rem;
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # ヘッダーセクション
 st.markdown('<p class="main-title">✨ StickerGen AI Studio</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">アイデアを瞬時にLINEスタンプの規定サイズへ最適化する次世代クリエイターツール</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">アイデアやラフ画像を瞬時にLINEスタンプの規定サイズへ最適化する次世代クリエイターツール</p>', unsafe_allow_html=True)
 
-# 1. APIキーとテーマ入力エリア（ホーム画面に配置）
-with st.container():
-    st.markdown("### 🔑 Step 1: OpenAI APIキーの設定")
-    api_key = st.text_input(
-        "OpenAI API Key",
-        type="password",
-        placeholder="sk-...",
-        help="ご自身のOpenAI APIキーを入力してください（サーバーには保存されません）"
-    )
+# 1. APIキー入力エリア
+st.markdown("### 🔑 Step 1: OpenAI APIキーの設定")
+api_key = st.text_input(
+    "OpenAI API Key",
+    type="password",
+    placeholder="sk-...",
+    help="ご自身のOpenAI APIキーを入力してください（サーバーには保存されません）"
+)
 
 st.markdown("---")
 
-with st.container():
-    st.markdown("### 🎨 Step 2: スタンプのテーマを入力")
-    theme = st.text_input(
-        "作りたいキャラクターやテーマ",
-        placeholder="例: 敬語を使うシュールな白猫の日常、関西弁のハムスター など"
-    )
+# 2. テーマ入力 ＆ 画像アップロードエリア
+st.markdown("### 🎨 Step 2: スタンプのテーマ入力 または ラフ画のアップロード")
+theme = st.text_input(
+    "テキストテーマで指定する場合",
+    placeholder="例: 敬語を使うシュールな白猫、関西弁のハムスター など"
+)
+
+uploaded_file = st.file_uploader(
+    "または、手描きのラフ画や参考画像をアップロード (PNG / JPG)",
+    type=["png", "jpg", "jpeg"]
+)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -67,18 +65,42 @@ st.markdown("<br>", unsafe_allow_html=True)
 if st.button("🚀 デモスタンプを生成する（1枚）", type="primary", use_container_width=True):
     if not api_key:
         st.error("⚠️ OpenAI APIキーを入力してください。")
-    elif not theme:
-        st.warning("⚠️ スタンプのテーマを入力してください。")
+    elif not theme and not uploaded_file:
+        st.warning("⚠️ テキストテーマを入力するか、画像をアップロードしてください。")
     else:
-        with st.spinner("✨ AIがスタンプをデザインし、LINE規定サイズに整形中..."):
+        with st.spinner("✨ AIが画像やテーマを解析し、スタンプを生成中..."):
             try:
-                # OpenAIクライアントの初期化
                 client = openai.OpenAI(api_key=api_key)
+                
+                final_prompt = ""
+                
+                # 画像がアップロードされている場合はGPT-4oでビジョン解析してプロンプト化
+                if uploaded_file:
+                    image_bytes = uploaded_file.getvalue()
+                    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+                    
+                    vision_response = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": "Analyze this image and describe it concisely as a character for a cute vector sticker, maintaining its core features."},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                                ]
+                            }
+                        ],
+                        max_tokens=300
+                    )
+                    desc = vision_response.choices[0].message.content
+                    final_prompt = f"A cute sticker of {desc}, white background, flat vector art, clear clean outline, high contrast, transparent style"
+                else:
+                    final_prompt = f"A cute sticker of {theme}, white background, flat vector art, clear clean outline, high contrast, transparent style, friendly"
 
                 # DALL-E 3で画像生成
                 response = client.images.generate(
                     model="dall-e-3",
-                    prompt=f"A cute sticker of {theme}, white background, flat vector art, clear clean outline, high contrast, transparent style, friendly",
+                    prompt=final_prompt,
                     size="1024x1024",
                     quality="standard",
                     n=1
@@ -99,7 +121,8 @@ if st.button("🚀 デモスタンプを生成する（1枚）", type="primary",
                     st.image(img_resized, caption="LINE規定サイズ (370x320px)", use_container_width=True)
                 with col2:
                     st.markdown("#### 💡 自動化されたポイント")
-                    st.write("✅ DALL-E 3による高精度生成")
+                    st.write("✅ テキスト/画像からのマルチモーダル解析")
+                    st.write("✅ DALL-E 3による高品質スタンプ化")
                     st.write("✅ LINE専用サイズ（370x320）へ自動リサイズ")
                     st.markdown("*※製品版では40個一括・背景透過・ZIP出力に対応*")
 
