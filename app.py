@@ -53,7 +53,7 @@ api_key = st.text_input(
 
 st.markdown("---")
 
-# 2. テーマ入力エリア（デモはテキストテーマのみで高速・シンプルに）
+# 2. テーマ入力エリア
 st.markdown("### 🎨 Step 2: スタンプのテーマを入力")
 theme = st.text_input(
     "作りたいキャラクターやメッセージのテーマ",
@@ -100,20 +100,20 @@ if st.button("🚀 デモスタンプを生成する（1枚）", type="primary",
                     st.write("✅ テキストからのAIデザイン生成")
                     st.write("✅ LINE専用サイズ（370x320）へ自動リサイズ")
                     st.markdown("---")
-                    st.caption("※製品版では「画像アップロード」「背景自動透過」「40個一括生成」「ZIP一括DL」のフル機能が手に入ります。")
+                    st.caption("※製品版では「40個一括生成」「ZIP一括DL」のフル機能が手に入ります。")
 
-                # マネタイズ導線（CTA）
+                # マネタイズ導線（Stripe決済リンク直結）
                 st.markdown("---")
                 st.markdown("""
                 <div class="info-box">
                     <strong>🔥 自分専用のフルスペック生成機を手に入れませんか？</strong><br>
-                    手書きのラフ画からの変換、背景の自動透過、そして面倒な40個のスタンプ作成とZIP一括エクスポートを完全自動化できるソースコードを販売中です。
+                    面倒な40個のスタンプ作成とZIP一括エクスポートを完全自動化できるソースコードを手元に導入できます。
                 </div>
                 """, unsafe_allow_html=True)
                 
                 st.link_button(
                     "🔒 フルスペック版のソースコード（権利）を手に入れる",
-                    "https://example.com/your-checkout-page",
+                    "https://buy.stripe.com/eVqaEWchM1MlENtbn8eZ20i",
                     use_container_width=True
                 )
 
